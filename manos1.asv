@@ -1,0 +1,36 @@
+%algo1
+clear all;
+close all;
+
+cd('C:\Users\piv115\Desktop\Programación\Training-Dataset\Images');
+% x = rgb2ycbcr(imread('1_P_hgr1_id04_1.jpg'));
+% for i=1:3
+%     figure;
+%     subplot(2,1,1)
+%     imshow(x(:,:,i))
+%     subplot(2,1,2)
+%     imhist(x(:,:,i));
+%     switch i
+%         case 1
+%             title('Y');
+%         case 2
+%             title('CrB');
+%         case 3
+%             title('CrR');
+%     end
+% end
+
+% MULTIPLICAR IMATGE PER MÀSCARA (NAND)
+cd('C:\Users\piv115\Desktop\Programación\Training-Dataset\Masks-Ideal');
+mask = imread('2_P_hgr1_id02_2.jpg');
+cd('C:\Users\piv115\Desktop\Programación\Training-Dataset\Images');
+x = imread('2_P_hgr1_id02_2.jpg');
+
+imshow(x)
+
+% CONVERSIÓ A YCbCr
+
+% HISTOGRAMA DE LES COMPONENTS DE CROMA
+
+% TRIAR LLINDAR I BINARITZAR
+
