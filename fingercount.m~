@@ -131,32 +131,48 @@ function numfingers = fingercount(imagename,path,visualize)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,103),100); 
+    smoothdist=medfilt1(smooth(minstart,103),80); 
+%    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
     local_min=islocalmin(smoothdist);
     local_min(1)=1;
     local_min(length(smoothdist))=1;
+ 
+    th = 1.73*std(smoothdist);
+    for i = 1:length(local_max)
+         if smoothdist(i) < th
+             local_max(i) = 0;
+         end
+    end
+    
     maxima=find(local_max==1);
     minima=find(local_min==1);
+    
+    for i = 1:length(maxima) 
+        bw=2*min(abs(minima-maxima(i)));
+        horzcat(possible_arm,bw)
+    end
+    if max(possible_arm) > 400
+        maxima=
+    end
     
     if(strcmp('yes',visualize) == 1)
         figure();
         hold on;
         title('Finger detector')
         %plot(dist);
-        olaksas
-        plot();
+%         olakase = smooth(median(minstart,100),50);
+        plot(smoothdist);
         hold on;
         stem(300*local_max,'X');
         stem(300*local_min,'O');
-        m=mean(smoothdist);
-        hline = refline([0 m]);
+        hline = refline([0 th]);
         hline.Color = 'r';
         hold off;
     end
 
-    numfingers = length(maxima)-1;
+    numfingers = length(maxima);
     if numfingers > 5
         numfingers = 5;
     elseif numfingers < 1

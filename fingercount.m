@@ -131,7 +131,7 @@ function numfingers = fingercount(imagename,path,visualize)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,103),100); 
+    smoothdist=medfilt1(smooth(minstart,103),80); 
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -148,6 +148,12 @@ function numfingers = fingercount(imagename,path,visualize)
     
     maxima=find(local_max==1);
     minima=find(local_min==1);
+    possible_arm = [];
+    
+    for i = 1:length(maxima) 
+        bw=2*min(abs(minima-maxima(i)));
+        possible_arm=horzcat(possible_arm,bw);
+    end
     
     if(strcmp('yes',visualize) == 1)
         figure();
@@ -158,13 +164,18 @@ function numfingers = fingercount(imagename,path,visualize)
         plot(smoothdist);
         hold on;
         stem(300*local_max,'X');
-%        stem(300*local_min,'O');
+        stem(300*local_min,'O');
         hline = refline([0 th]);
         hline.Color = 'r';
         hold off;
     end
 
-    numfingers = length(maxima)-1;
+    if max(possible_arm) > 0
+        numfingers=length(maxima)-1;
+    else
+        numfingers = length(maxima);
+    end
+    
     if numfingers > 5
         numfingers = 5;
     elseif numfingers < 1
