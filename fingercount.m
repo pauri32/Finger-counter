@@ -1,4 +1,4 @@
-function numfingers = fingercount(imagename,path,visualize,w)
+function numfingers = fingercount(imagename,path,visualize)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -139,7 +139,7 @@ function numfingers = fingercount(imagename,path,visualize,w)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
  
-    th = w*std(smoothdist);
+    th = 1.73*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
