@@ -1,4 +1,4 @@
-function numfingers = fingercount(imagename,path,visualize)
+function numfingers = fingercount(imagename,path,visualize,w)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -132,11 +132,20 @@ function numfingers = fingercount(imagename,path,visualize)
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
     smoothdist=medfilt1(smooth(minstart,103),100); 
+%    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
     local_min=islocalmin(smoothdist);
     local_min(1)=1;
     local_min(length(smoothdist))=1;
+ 
+    th = w*std(smoothdist);
+    for i = 1:length(local_max)
+         if smoothdist(i) < th
+             local_max(i) = 0;
+         end
+    end
+    
     maxima=find(local_max==1);
     minima=find(local_min==1);
     
@@ -145,12 +154,12 @@ function numfingers = fingercount(imagename,path,visualize)
         hold on;
         title('Finger detector')
         %plot(dist);
+%         olakase = smooth(median(minstart,100),50);
         plot(smoothdist);
         hold on;
         stem(300*local_max,'X');
-        stem(300*local_min,'O');
-        m=mean(smoothdist);
-        hline = refline([0 m]);
+%        stem(300*local_min,'O');
+        hline = refline([0 th]);
         hline.Color = 'r';
         hold off;
     end

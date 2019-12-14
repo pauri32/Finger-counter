@@ -135,6 +135,8 @@ function numfingers = fingercount(imagename,path,visualize)
     
     local_max=islocalmax(smoothdist);
     local_min=islocalmin(smoothdist);
+    local_min(1)=1;
+    local_min(length(smoothdist))=1;
     maxima=find(local_max==1);
     minima=find(local_min==1);
     
@@ -143,7 +145,8 @@ function numfingers = fingercount(imagename,path,visualize)
         hold on;
         title('Finger detector')
         %plot(dist);
-        plot(smoothdist);
+        olaksas
+        plot();
         hold on;
         stem(300*local_max,'X');
         stem(300*local_min,'O');
