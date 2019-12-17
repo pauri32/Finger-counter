@@ -14,15 +14,15 @@ close all;
 
 tic;
 
-cd('C:\Users\Patron\Desktop\pruebas');
+% cd('C:\Users\Patron\Desktop\pruebas');
 skin_data=matfile('skin_data.mat','Writable',false);
 hist=skin_data.hist;
 binary=skin_data.binary;
 threshold = 6936;
 
-%cd('C:\Users\Patron\Desktop\pruebas\Validation-Dataset\Images')
-cd('C:\Users\Patron\Desktop\pruebas\Test-Dataset\Test-Images');
-addpath 'C:\Users\Patron\Desktop\pruebas'
+cd('Training-Dataset/Images');
+%cd('C:\Users\Patron\Desktop\pruebas\Test-Dataset\Test-Images');
+%addpath 'C:\Users\Patron\Desktop\pruebas'
 Files=dir();
 
  tot_t_pos=0;
@@ -39,7 +39,7 @@ for k=3:length(Files)
    filename=Files(k).name;
    %cd('../../');        
    %cd('C:\Users\Patron\Desktop\pruebas\Validation-Dataset\Images');
-   cd('C:\Users\Patron\Desktop\pruebas\Test-Dataset\Test-Images');
+%   cd('C:\Users\Patron\Desktop\pruebas\Test-Dataset\Test-Images');
    ima = imread(filename);
    ycroma = double(rgb2ycbcr(ima));
    cbima = ycroma(:,:,2);
@@ -104,12 +104,12 @@ for k=3:length(Files)
     %imshow(mascara);
     filename=erase(filename,".jpg");
     savemask(mascara, filename);
-    [true_positive,true_negative,false_positive,false_negative] = fscore(filename);
-    tot_t_pos=tot_t_pos+true_positive;
-    tot_t_neg=tot_t_neg+true_negative;
-    tot_f_pos=tot_f_pos+false_positive;
-    tot_f_neg=tot_f_neg+false_negative;
-
+%     [true_positive,true_negative,false_positive,false_negative] = fscore(filename);
+%     tot_t_pos=tot_t_pos+true_positive;
+%     tot_t_neg=tot_t_neg+true_negative;
+%     tot_f_pos=tot_f_pos+false_positive;
+%     tot_f_neg=tot_f_neg+false_negative;
+    cd('Training-Dataset/Images');
 end
 
 true_positive = tot_t_pos;

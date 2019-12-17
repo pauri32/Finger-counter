@@ -1,4 +1,4 @@
-function numfingers = fingercount(imagename,path,visualize)
+function fingercount(imagename,path,visualize,w)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -15,6 +15,8 @@ function numfingers = fingercount(imagename,path,visualize)
 
     im=imcomplement(im);
     im=imfill(im,'holes');
+%     figure;
+%     imshow(im);
     im=imcomplement(im);
     %imshow(im)
 
@@ -54,8 +56,8 @@ function numfingers = fingercount(imagename,path,visualize)
     se3=strel('square',3);
     im=imclose(im,se1);
     contour=imdilate(im,se2)-im;
-    %figure;
-    %imshow(contour)
+    figure;
+    imshow(contour)
 
     %% OBTENCIÓN DE CONTORNO DE LA MANO
 
@@ -85,10 +87,11 @@ function numfingers = fingercount(imagename,path,visualize)
 
     f_contour=imfill(contour,[centery centerx+1]);
     f_contour=imopen(f_contour,se3);
+%     figure;
+%     imshow(f_contour);
     f_contour=imfill(f_contour,'holes');
     f_contour=bwmorph(f_contour,'remove');
-    %figure;
-    %imshow(f_contour);
+    
 
     %% RECORRIDO DEL CONTORNO
 
@@ -131,7 +134,7 @@ function numfingers = fingercount(imagename,path,visualize)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,103),80); 
+    smoothdist=medfilt1(smooth(minstart,50),150);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -139,7 +142,7 @@ function numfingers = fingercount(imagename,path,visualize)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
  
-    th = 1.73*std(smoothdist);
+    th = 1.7*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -148,14 +151,14 @@ function numfingers = fingercount(imagename,path,visualize)
     
     maxima=find(local_max==1);
     minima=find(local_min==1);
+    possible_arm = zeros(1,length(maxima));
     
-    for i = 1:length(maxima) 
-        bw=2*min(abs(minima-maxima(i)));
-        horzcat(possible_arm,bw)
+    for i = 1:length(maxima)
+        bw = min(abs(maxima(i)-minima));
+        possible_arm(i) = bw;
     end
-    if max(possible_arm) > 400
-        maxima=
-    end
+    maxbw = max(possible_arm);
+    desv=std(possible_arm);
     
     if(strcmp('yes',visualize) == 1)
         figure();
@@ -173,6 +176,14 @@ function numfingers = fingercount(imagename,path,visualize)
     end
 
     numfingers = length(maxima);
+    if maxbw > 200
+        numfingers = numfingers-1;
+    end
+    
+%     if max(smoothdist) > 1.5*mean(smoothdist)
+%         numfingers=numfingers-1;
+%     end
+        
     if numfingers > 5
         numfingers = 5;
     elseif numfingers < 1

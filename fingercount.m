@@ -1,4 +1,4 @@
-function numfingers = fingercount(imagename,path,visualize)
+function fingercount(imagename,path,visualize,w)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -15,6 +15,8 @@ function numfingers = fingercount(imagename,path,visualize)
 
     im=imcomplement(im);
     im=imfill(im,'holes');
+%     figure;
+%     imshow(im);
     im=imcomplement(im);
     %imshow(im)
 
@@ -24,8 +26,8 @@ function numfingers = fingercount(imagename,path,visualize)
     %posteriormente.
 
     dist_tr = bwdist(im,'euclidean');
-    %figure;
-    %imshow(dist_tr,[])
+%     figure;
+%     imshow(dist_tr,[])
 
 
     [centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
@@ -54,8 +56,8 @@ function numfingers = fingercount(imagename,path,visualize)
     se3=strel('square',3);
     im=imclose(im,se1);
     contour=imdilate(im,se2)-im;
-    %figure;
-    %imshow(contour)
+%     figure;
+%     imshow(contour)
 
     %% OBTENCIÓN DE CONTORNO DE LA MANO
 
@@ -82,13 +84,32 @@ function numfingers = fingercount(imagename,path,visualize)
     %un píxel hacia la derecha. Cuando rellenemos la mano, eliminamos el resto
     %de figura que no sean la mano propiamente, hacemos un repaso a los
     %agujeros que puedan sobrar y nos quedamos con el contorno final.
+    
+    if centerx==1
+       centerx=2;
+    end
+    if centerx==n_cols
+       centerx=n_cols-1;
+    end 
+    if centery==1
+       centery=2;
+    end
+    if centery==n_rows
+       centery=n_rows-1;
+    end 
 
-    f_contour=imfill(contour,[centery centerx+1]);
+    f_contour=imfill(contour,[centery centerx]);
+%     figure;
+%     imshow(f_contour);
+%     axis on;
+%     hold on;
+%     plot(centerx,centery,'ro')
     f_contour=imopen(f_contour,se3);
+%     figure;
+%     imshow(f_contour);
     f_contour=imfill(f_contour,'holes');
     f_contour=bwmorph(f_contour,'remove');
-    %figure;
-    %imshow(f_contour);
+    
 
     %% RECORRIDO DEL CONTORNO
 
@@ -131,7 +152,7 @@ function numfingers = fingercount(imagename,path,visualize)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,103),80); 
+    smoothdist=medfilt1(smooth(minstart,50),150);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -139,7 +160,7 @@ function numfingers = fingercount(imagename,path,visualize)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
  
-    th = 1.73*std(smoothdist);
+    th = 1.7*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -148,12 +169,14 @@ function numfingers = fingercount(imagename,path,visualize)
     
     maxima=find(local_max==1);
     minima=find(local_min==1);
-    possible_arm = [];
+    possible_arm = zeros(1,length(maxima));
     
-    for i = 1:length(maxima) 
-        bw=2*min(abs(minima-maxima(i)));
-        possible_arm=horzcat(possible_arm,bw);
+    for i = 1:length(maxima)
+        bw = min(abs(maxima(i)-minima));
+        possible_arm(i) = bw;
     end
+    maxbw = max(possible_arm);
+    desv=std(possible_arm);
     
     if(strcmp('yes',visualize) == 1)
         figure();
@@ -170,12 +193,15 @@ function numfingers = fingercount(imagename,path,visualize)
         hold off;
     end
 
-    if max(possible_arm) > 0
-        numfingers=length(maxima)-1;
-    else
-        numfingers = length(maxima);
+    numfingers = length(maxima);
+    if maxbw > 200
+        numfingers = numfingers-1;
     end
     
+%     if max(smoothdist) > 1.5*mean(smoothdist)
+%         numfingers=numfingers-1;
+%     end
+        
     if numfingers > 5
         numfingers = 5;
     elseif numfingers < 1
