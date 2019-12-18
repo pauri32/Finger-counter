@@ -1,8 +1,8 @@
 clear all;
 close all;
 
-path='Training-Dataset/Masks-Ideal';
-visualize='no';
+path='Validation-Dataset/Masks-Ideal';
+visualize='yes';
 cd(path);
 Files=dir();
 cd('../..');
@@ -26,9 +26,9 @@ desvia = [];
     compare = [groundtruth;predicted];
     figure;
     conf = confusionchart(groundtruth,predicted,'RowSummary','row-normalized','ColumnSummary','column-normalized');     
-    points=trace(conf.NormalizedValues);
-    total=sum(sum(conf.NormalizedValues));
-    score = (points/total)*100;
+%     points=trace(conf.NormalizedValues);
+%     total=sum(sum(conf.NormalizedValues));
+%     score = (points/total)*100;
 %     if score > maxscore
 %         maxscore=score;
 %         bestw=w;

@@ -1,13 +1,21 @@
-function numfingers=fingercount(imagename,path,visualize,w)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
-
+    
+    clear all;
+    close all;
+    clc;
+    path='C:\Users\Patron\Desktop\Finger-counter-master\Training-Dataset\Masks-Ideal';
+    cd(path);
+    visualize='yes';
+    Files=dir();
+    imagename=Files(10).name;
+    
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
     cd(path);
     im = imread(imagename);
-    cd('../..');
+    cd('..\..');
     %cd('C:\Users\Patron\Desktop\pruebas\Test-Dataset\Test-Masks');
 
-        %Leemos la imagen y le hacemos un relleno de los posibles huecos que esta
+    %Leemos la imagen y le hacemos un relleno de los posibles huecos que esta
     %pueda contener. Esto limpia bastante las imagenes con peor calidad, lo
     %cual permite que la obtención de los contornos sea mejor. Dado que matlab
     %interpreta un agujero una mancha negra rodeada de puntos blancos, debemos
@@ -27,31 +35,19 @@ function numfingers=fingercount(imagename,path,visualize,w)
 %     figure;
 %     imshow(dist_tr,[])
     regmax=imregionalmax(dist_tr);
-%     imshow(regmax);
+    imshow(regmax);
     imcenter=[floor(n_cols/2) floor(n_rows/2)];
-    [peakx,peaky]=find(regmax~=0);
-    distmin=100000;
-    for i=1:length(peakx)
-        distance=sqrt((peakx(i)-imcenter(1))^2+((peaky(i)-imcenter(2))^2));
-        if distance < distmin
-            distmin=distance;
-            centerx=peakx(i);
-            centery=peaky(i);
+    centers=find(regmax(:));
+    d_min=1000000;
+    for i=1:length(centers)
+        [auxfil,auxcol]=ind2sub([n_rows n_cols],centers(i));
+        dist_c=pdist2(imcenter,[auxfil auxcol]);
+        if dist_c<d_min
+            d_min=dist_c;
+            centery=auxfil;
+            centerx=auxcol;
         end
     end
-    
-    
-    
-%     d_min=1000000;
-%     for i=1:length(centers)
-%         [auxfil,auxcol]=ind2sub([n_rows n_cols],centers(i));
-%         dist_c=pdist2(imcenter,[auxfil auxcol]);
-%         if dist_c<d_min
-%             d_min=dist_c;
-%             centery=auxfil;
-%             centerx=auxcol;
-%         end
-%     end
 
     %[centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
 
@@ -79,12 +75,12 @@ function numfingers=fingercount(imagename,path,visualize,w)
     se3=strel('square',3);
     im=imclose(im,se1);
     contour=imdilate(im,se2)-im;
-%     figure;
-%     imshow(contour)
+    %figure;
+    %imshow(contour)
 
     %% OBTENCIÓN DE CONTORNO DE LA MANO
 
-    [n_rows,n_cols]=size(contour);
+    %[n_rows,n_cols]=size(contour);
 
     contour=im2bw(contour,0.4); %binariza la imagen y hace que el tipo de dato sea binario
 
@@ -107,32 +103,13 @@ function numfingers=fingercount(imagename,path,visualize,w)
     %un píxel hacia la derecha. Cuando rellenemos la mano, eliminamos el resto
     %de figura que no sean la mano propiamente, hacemos un repaso a los
     %agujeros que puedan sobrar y nos quedamos con el contorno final.
-    
-    if centerx==1
-       centerx=2;
-    end
-    if centerx==n_cols
-       centerx=n_cols-1;
-    end 
-    if centery==1
-       centery=2;
-    end
-    if centery==n_rows
-       centery=n_rows-1;
-    end 
 
-    f_contour=imfill(contour,[centery centerx]);
-%     figure;
-%     imshow(f_contour);
-%     axis on;
-%     hold on;
-%     plot(centerx,centery,'ro')
+    f_contour=imfill(contour,[centery centerx+1]);
     f_contour=imopen(f_contour,se3);
-%     figure;
-%     imshow(f_contour);
     f_contour=imfill(f_contour,'holes');
     f_contour=bwmorph(f_contour,'remove');
-    
+    %figure;
+    %imshow(f_contour);
 
     %% RECORRIDO DEL CONTORNO
 
@@ -175,86 +152,26 @@ function numfingers=fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,90),40);
+    smoothdist=medfilt1(smooth(minstart,103),100); 
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
     local_min=islocalmin(smoothdist);
     local_min(1)=1;
     local_min(length(smoothdist))=1;
-
-    th = 1.5*std(smoothdist);
+ 
+    th = 1.73*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
          end
     end
-
-%     for i = 1:length(local_max)
-%          if  < th
-%              local_max(i) = 0;
-%          end
-%     end
     
     maxima=find(local_max==1);
     minima=find(local_min==1);
-    peakmax=[];
-    for i=1:length(maxima)
-       peakmax=horzcat(peakmax,smoothdist(maxima(i)));
-    end
-    
-    for i=1:length(minima)
-        if smoothdist(minima(i)) > 0.9*mean(peakmax)
-            local_min(minima(i))=0;
-        end
-    end
-    minima=find(local_min==1);
-    
-    possible_arm = [];
-    iter = length(maxima);
-    for i = 1:iter
-        dist=min(abs(maxima(i)-minima));
-        pos=maxima(i)+(sign(min(maxima(i)-minima))*dist);
-        contrast=abs(1-round(smoothdist(pos)/smoothdist(maxima(i)),2));
-        if contrast < 0.1
-            local_max(maxima(i))=0;
-        else
-            bw = min(abs(maxima(i)-minima));
-            possible_arm = horzcat(possible_arm,bw);
-        end
-    end
-    
-    
-    maxima=find(local_max==1);
-    minims = sort(possible_arm);        
-    thr = 2*min(possible_arm);
-    if length(possible_arm) > 1
-        if minims(1)/minims(2) < 0.2
-            thr = 2*minims(2);
-        end
-    end
-    
-    count=0;
-    for i = 1:length(possible_arm)
-        if possible_arm(i) > thr
-            local_max(maxima(i)) = 0;
-            count = count+1;
-            if count==2 break;end
-        end
-    end
-    
-    maxima=find(local_max==1);
     
     if(strcmp('yes',visualize) == 1)
         figure();
-        subplot(2,1,1);
-        subimage(f_contour);
-        imshow(f_contour);
-        axis on;
-        hold on;
-        plot(centerx,centery,'ro');
-        
-        subplot(2,1,2);
         hold on;
         title('Finger detector')
         %plot(dist);
@@ -262,21 +179,15 @@ function numfingers=fingercount(imagename,path,visualize,w)
         plot(smoothdist);
         hold on;
         stem(300*local_max,'X');
-        stem(300*local_min,'O');
+%        stem(300*local_min,'O');
         hline = refline([0 th]);
         hline.Color = 'r';
         hold off;
     end
 
-    numfingers = length(maxima);
-    
-%     if max(smoothdist) > 1.5*mean(smoothdist)
-%         numfingers=numfingers-1;
-%     end
-        
+    numfingers = length(maxima)-1;
     if numfingers > 5
         numfingers = 5;
     elseif numfingers < 1
         numfingers = 1;
     end
-end

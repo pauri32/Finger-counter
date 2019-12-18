@@ -175,7 +175,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,90),40);
+    smoothdist=medfilt1(smooth(minstart,80),50);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -183,7 +183,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
 
-    th = 1.5*std(smoothdist);
+    th = 1.7*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -234,11 +234,11 @@ function numfingers=fingercount(imagename,path,visualize,w)
         end
     end
     
-    count=0;
+    count
     for i = 1:length(possible_arm)
         if possible_arm(i) > thr
             local_max(maxima(i)) = 0;
-            count = count+1;
+            count = count+1
             if count==2 break;end
         end
     end
@@ -247,8 +247,8 @@ function numfingers=fingercount(imagename,path,visualize,w)
     
     if(strcmp('yes',visualize) == 1)
         figure();
-        subplot(2,1,1);
-        subimage(f_contour);
+%         subplot(2,1,1);
+%         subimage(f_contour);
         imshow(f_contour);
         axis on;
         hold on;
