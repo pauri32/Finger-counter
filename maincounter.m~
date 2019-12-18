@@ -15,7 +15,7 @@ band = [];
 desvia = [];
 
 %  for w = 0.5:0.2:2.5
-    for i=3:length(Files)
+    for i=4:length(Files)
         filename=Files(i).name
         groundtruth(i)=str2double(filename(1));
         predicted(i)=fingercount(filename,path,visualize);
@@ -35,9 +35,8 @@ desvia = [];
     mprecision=mean(precision);
     mrecall=mean(recall);
     fscore=(2*mprecision*mrecall)/(mprecision+mrecall); 
-    
-%     if fscore > maxscore
-%         maxscore=fscore;
-%         bestw=w;
-%     end
-% end
+    if fscore > maxscore
+        maxscore=fscore;
+        bestw=w;
+    end
+end

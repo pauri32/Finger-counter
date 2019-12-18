@@ -1,4 +1,4 @@
-function numfingers=fingercount(imagename,path,visualize,w)
+function numfingers=fingercount(imagename,path,visualize)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -175,7 +175,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,90),40);
+    smoothdist=medfilt1(smooth(minstart,120),20);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -183,7 +183,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
 
-    th = 1.5*std(smoothdist);
+    th = std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -204,7 +204,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     end
     
     for i=1:length(minima)
-        if smoothdist(minima(i)) > 0.9*mean(peakmax)
+        if smoothdist(minima(i)) > mean(peakmax)
             local_min(minima(i))=0;
         end
     end
@@ -215,6 +215,9 @@ function numfingers=fingercount(imagename,path,visualize,w)
     for i = 1:iter
         dist=min(abs(maxima(i)-minima));
         pos=maxima(i)+(sign(min(maxima(i)-minima))*dist);
+        if pos > length(smoothdist)
+            pos=length(smoothdist);
+        end
         contrast=abs(1-round(smoothdist(pos)/smoothdist(maxima(i)),2));
         if contrast < 0.1
             local_max(maxima(i))=0;
