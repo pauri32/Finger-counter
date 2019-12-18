@@ -1,4 +1,4 @@
-function fingercount(imagename,path,visualize,w)
+function numfingers=fingercount(imagename,path,visualize,w)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -152,34 +152,82 @@ function fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,50),150);
+    smoothdist=medfilt1(smooth(minstart,80),50);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
     local_min=islocalmin(smoothdist);
     local_min(1)=1;
     local_min(length(smoothdist))=1;
- 
+
     th = 1.7*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
          end
     end
+
+%     for i = 1:length(local_max)
+%          if  < th
+%              local_max(i) = 0;
+%          end
+%     end
     
     maxima=find(local_max==1);
     minima=find(local_min==1);
-    possible_arm = zeros(1,length(maxima));
-    
-    for i = 1:length(maxima)
-        bw = min(abs(maxima(i)-minima));
-        possible_arm(i) = bw;
+    peakmax=[];
+    for i=1:length(maxima)
+       peakmax=horzcat(peakmax,smoothdist(maxima(i)));
     end
-    maxbw = max(possible_arm);
-    desv=std(possible_arm);
+    
+    for i=1:length(minima)
+        if smoothdist(minima(i)) > 0.9*mean(peakmax)
+            local_min(minima(i))=0;
+        end
+    end
+    minima=find(local_min==1);
+    
+    possible_arm = [];
+    iter = length(maxima);
+    for i = 1:iter
+        dist=min(abs(maxima(i)-minima));
+        pos=maxima(i)+(sign(min(maxima(i)-minima))*dist);
+        contrast=abs(1-round(smoothdist(pos)/smoothdist(maxima(i)),2));
+        if contrast < 0.1
+            local_max(maxima(i))=0;
+        else
+            bw = min(abs(maxima(i)-minima));
+            possible_arm = horzcat(possible_arm,bw);
+        end
+    end
+    
+    
+    maxima=find(local_max==1);
+    minims = sort(possible_arm);        
+    thr = 2*min(possible_arm);
+    if length(possible_arm) > 1
+        if minims(1)/minims(2) < 0.2
+            thr = 2*minims(2);
+        end
+    end
+    
+    for i = 1:length(possible_arm)
+        if possible_arm(i) > thr
+            local_max(maxima(i)) = 0;
+        end
+    end
+    
+    maxima=find(local_max==1);
     
     if(strcmp('yes',visualize) == 1)
         figure();
+        subplot(2,1,1);
+        subimage(f_contour);
+        axis on;
+        hold on;
+        plot(centerx,centery,'ro');
+        
+        subplot(2,1,2);
         hold on;
         title('Finger detector')
         %plot(dist);
@@ -194,9 +242,6 @@ function fingercount(imagename,path,visualize,w)
     end
 
     numfingers = length(maxima);
-    if maxbw > 200
-        numfingers = numfingers-1;
-    end
     
 %     if max(smoothdist) > 1.5*mean(smoothdist)
 %         numfingers=numfingers-1;
