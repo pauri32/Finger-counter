@@ -26,33 +26,24 @@ function numfingers=fingercount(imagename,path,visualize,w)
     dist_tr = bwdist(im,'euclidean');
 %     figure;
 %     imshow(dist_tr,[])
-    regmax=imregionalmax(dist_tr);
+    n=4;
+    regmax=imregionalmax(dist_tr((n_rows/n):((n-1)*(n_rows/n)),(n_cols/n):((n-1)*n_cols/n)));
+%    [centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
 %     imshow(regmax);
-    imcenter=[floor(n_cols/2) floor(n_rows/2)];
+
+    new_rows=n_rows-2*(n_rows/n);
+    new_cols=n_cols-2*(n_cols/n);
+    imcenter=[floor(new_cols/2) floor(new_rows/2)];
     [peakx,peaky]=find(regmax~=0);
     distmin=100000;
     for i=1:length(peakx)
         distance=sqrt((peakx(i)-imcenter(1))^2+((peaky(i)-imcenter(2))^2));
         if distance < distmin
             distmin=distance;
-            centerx=peakx(i);
-            centery=peaky(i);
+            centerx=peakx(i)*round(n/2);
+            centery=peaky(i)*round(n/2);
         end
     end
-    
-    
-    
-%     d_min=1000000;
-%     for i=1:length(centers)
-%         [auxfil,auxcol]=ind2sub([n_rows n_cols],centers(i));
-%         dist_c=pdist2(imcenter,[auxfil auxcol]);
-%         if dist_c<d_min
-%             d_min=dist_c;
-%             centery=auxfil;
-%             centerx=auxcol;
-%         end
-%     end
-
     %[centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
 
     if(length(centery)>1)
@@ -73,10 +64,13 @@ function numfingers=fingercount(imagename,path,visualize,w)
     %HAY QUE AJUSTAR EL TAMAÑO DEL STREL SEGÚN EL TAMAÑO DE LA IMAGEN, PROPONGO
     %HACER UNA REDUCCIÓN QUE TOME 480x640 COMO ESTANDAR Y BASADO EN UN LADO
     %HAGA UNA REDUCCIÓN A LA MITAD SI SE DIEZMA, O DOBLE SI SE INTERPOLA
+    
     %se1=strel('square',15);
-    se1=strel('disk',12,8);
-    se2=strel('square',3);
-    se3=strel('square',3);
+    re_size=n_rows/480;
+    
+    se1=strel('disk',round(12*re_size),8);
+    se2=strel('square',round(3*re_size));
+    se3=strel('square',round(3*re_size));
     im=imclose(im,se1);
     contour=imdilate(im,se2)-im;
 %     figure;
@@ -175,7 +169,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,80),50);
+    smoothdist=medfilt1(smooth(minstart,90),40);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -183,7 +177,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
 
-    th = 1.7*std(smoothdist);
+    th = 1.5*std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -234,11 +228,11 @@ function numfingers=fingercount(imagename,path,visualize,w)
         end
     end
     
-    count
+    count=0;
     for i = 1:length(possible_arm)
         if possible_arm(i) > thr
             local_max(maxima(i)) = 0;
-            count = count+1
+            count = count+1;
             if count==2 break;end
         end
     end
@@ -247,8 +241,8 @@ function numfingers=fingercount(imagename,path,visualize,w)
     
     if(strcmp('yes',visualize) == 1)
         figure();
-%         subplot(2,1,1);
-%         subimage(f_contour);
+        subplot(2,1,1);
+        subimage(f_contour);
         imshow(f_contour);
         axis on;
         hold on;

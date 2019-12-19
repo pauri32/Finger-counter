@@ -1,8 +1,8 @@
 clear all;
 close all;
 
-path='Validation-Dataset/Masks-Ideal';
-visualize='no';
+path='Validation-Dataset/Masks';
+visualize='yes';
 cd(path);
 Files=dir();
 cd('../..');
@@ -15,15 +15,15 @@ band = [];
 desvia = [];
 
 %  for w = 0.5:0.2:2.5
-    for i=3:length(Files)
+    for i=4:length(Files)
         filename=Files(i).name
         groundtruth(i)=str2double(filename(1));
         predicted(i)=fingercount(filename,path,visualize);
     end
     %histogram(lele)
     compare = [groundtruth;predicted];
-    %figure;
-    %conf = confusionchart(groundtruth,predicted,'RowSummary','row-normalized','ColumnSummary','column-normalized');
+    figure;
+    conf = confusionchart(groundtruth,predicted,'RowSummary','row-normalized','ColumnSummary','column-normalized');
     c=confusionmat(groundtruth,predicted);
     confusion=c(2:6,2:6);
     precision=zeros(1,5);

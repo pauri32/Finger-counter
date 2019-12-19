@@ -1,4 +1,4 @@
-function numfingers=fingercount(imagename,path,visualize,w)
+function numfingers=fingercount(imagename,path,visualize)
 %% OBTENCIÓN DE PARÁMETROS PRINCIPALES
 
     %cd('C:\Users\piv115\Desktop\manos_PauR_DavidV\Masks-Ideal')
@@ -13,30 +13,22 @@ function numfingers=fingercount(imagename,path,visualize,w)
     %interpreta un agujero una mancha negra rodeada de puntos blancos, debemos
     %hacer el negativo de nuestra máscara y revertir el proceso después.
 
-    [n_rows,n_cols]=size(im);
-    re_size=n_rows/480;
-    
-    smask=strel('square',round(3*re_size));
-    marker=imclose(im,smask);
-    marker=im2bw(marker,0.4);
-%     im=imcomplement(im);
-%     im=imfill(im,'holes');
-%     im=imcomplement(im);
-    im=bwareaopen(im,5000);
-    
-    im=imreconstruct(marker,im); 
+    im=imcomplement(im);
+    im=imfill(im,'holes');
+    im=imcomplement(im);
     %imshow(im)
 
     %Aplicamos la transformada de la distancia euclidea obteniendo así el punto
     %central de as máscaras. Algunas máscaras situan su punto central en el
     %brazo, cosa que no nos afectará de cara a recorrer el contorno
     %posteriormente.
+    [n_rows,n_cols]=size(im);
     dist_tr = bwdist(im,'euclidean');
 %     figure;
 %     imshow(dist_tr,[])
     n=4;
-    regmax=imregionalmax(dist_tr(round(n_rows/n):((n-1)*round(n_rows/n)),round(n_cols/n):((n-1)*round(n_cols/n))));
-
+    regmax=imregionalmax(dist_tr(round(n_rows/n):round((n-1)*(n_rows/n)),round(n_cols/n):round((n-1)*n_cols/n)));
+%    [centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
 %     imshow(regmax);
 
     new_rows=n_rows-2*(n_rows/n);
@@ -48,19 +40,26 @@ function numfingers=fingercount(imagename,path,visualize,w)
         distance=sqrt((peakx(i)-imcenter(1))^2+((peaky(i)-imcenter(2))^2));
         if distance < distmin
             distmin=distance;
-            centrox=peakx(i)*round(n/2);
-            centroy=peaky(i)*round(n/2);
+            centerx=peakx(i)*round(n/2);
+            centery=peaky(i)*round(n/2);
         end
     end
+    
+    
+    
+%     d_min=1000000;
+%     for i=1:length(centers)
+%         [auxfil,auxcol]=ind2sub([n_rows n_cols],centers(i));
+%         dist_c=pdist2(imcenter,[auxfil auxcol]);
+%         if dist_c<d_min
+%             d_min=dist_c;
+%             centery=auxfil;
+%             centerx=auxcol;
+%         end
+%     end
+
     %[centery,centerx] = find(ismember(dist_tr,max(dist_tr(:))));
-    [maxx,maxy] = find(ismember(dist_tr,max(dist_tr(:))));
-    if(distmin<pdist2([maxx maxy],[n_cols/2 n_rows/2]))
-        centerx=centrox;
-        centery=centroy;
-    else
-        centerx=maxx(1);
-        centery=maxy(1);    
-    end
+
     if(length(centery)>1)
         centery=centery(1);
     end
@@ -79,8 +78,8 @@ function numfingers=fingercount(imagename,path,visualize,w)
     %HAY QUE AJUSTAR EL TAMAÑO DEL STREL SEGÚN EL TAMAÑO DE LA IMAGEN, PROPONGO
     %HACER UNA REDUCCIÓN QUE TOME 480x640 COMO ESTANDAR Y BASADO EN UN LADO
     %HAGA UNA REDUCCIÓN A LA MITAD SI SE DIEZMA, O DOBLE SI SE INTERPOLA
-    
     %se1=strel('square',15);
+    re_size=n_rows/480;
     
     se1=strel('disk',round(12*re_size),8);
     se2=strel('square',round(3*re_size));
@@ -129,7 +128,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
        centery=n_rows-1;
     end 
 
-    f_contour=imfill(contour,imcenter);
+    f_contour=imfill(contour,[centery centerx]);
 %     figure;
 %     imshow(f_contour);
 %     axis on;
@@ -140,7 +139,6 @@ function numfingers=fingercount(imagename,path,visualize,w)
 %     imshow(f_contour);
     f_contour=imfill(f_contour,'holes');
     f_contour=bwmorph(f_contour,'remove');
-    f_contour=bwareaopen(f_contour,50);
     
 
     %% RECORRIDO DEL CONTORNO
@@ -184,7 +182,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     ini2min=dist(1:mindistpos(1))';
     min2fin=dist((mindistpos(1)+1):length(dist))';
     minstart=horzcat(min2fin,ini2min);
-    smoothdist=medfilt1(smooth(minstart,90),40);
+    smoothdist=medfilt1(smooth(minstart,100),20);
 %    smoothdist=smooth(median(minstart,100),50);
     
     local_max=islocalmax(smoothdist);
@@ -192,7 +190,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     local_min(1)=1;
     local_min(length(smoothdist))=1;
 
-    th = 1.5*std(smoothdist);
+    th = std(smoothdist);
     for i = 1:length(local_max)
          if smoothdist(i) < th
              local_max(i) = 0;
@@ -213,7 +211,7 @@ function numfingers=fingercount(imagename,path,visualize,w)
     end
     
     for i=1:length(minima)
-        if smoothdist(minima(i)) > 0.9*mean(peakmax)
+        if smoothdist(minima(i)) > mean(peakmax)
             local_min(minima(i))=0;
         end
     end
@@ -224,6 +222,9 @@ function numfingers=fingercount(imagename,path,visualize,w)
     for i = 1:iter
         dist=min(abs(maxima(i)-minima));
         pos=maxima(i)+(sign(min(maxima(i)-minima))*dist);
+        if pos > length(smoothdist)
+            pos=length(smoothdist);
+        end
         contrast=abs(1-round(smoothdist(pos)/smoothdist(maxima(i)),2));
         if contrast < 0.1
             local_max(maxima(i))=0;
